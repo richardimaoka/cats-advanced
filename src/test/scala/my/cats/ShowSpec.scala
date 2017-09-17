@@ -33,7 +33,7 @@ class ShowSpec extends FlatSpec with Matchers {
     import my.cats.Cat._
 
     val actual = Cat("tama", 10, "white").show
-    val expected = "Show: Cat(name = tama, age = 10, color = white)"
+    val expected = "tama is a 10 year-old white cat."
     actual should equal (expected)
   }
 
