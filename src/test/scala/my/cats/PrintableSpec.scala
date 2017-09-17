@@ -120,4 +120,25 @@ class PrintableSpec extends FlatSpec with Matchers {
     import my.cats.PrintableSyntax._
     val actual = Person("Dave", "dave@example.com").print
   }
+
+  "Interface syntax" should "work for Cat" in {
+    /**
+     * import Syntax interface, and
+     * import Person's Printable type class instance
+     */
+    import my.cats.PrintableSyntax._
+    import my.cats.Cat._
+
+    val actual = Cat("Dave", 205, "red").format
+    val expected = "Cat(name = Dave, age = 205, color = red)"
+    logit(actual)
+    logit(expected)
+    actual should equal(expected)
+  }
+
+  "Interface syntax" should "print out Cat" in {
+    import my.cats.PrintableSyntax._
+    Cat("Dave", 205, "red").print
+  }
+
 }
