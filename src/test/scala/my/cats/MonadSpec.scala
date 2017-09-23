@@ -128,15 +128,64 @@ class MonadSpec extends FlatSpec with Matchers with PropertyChecks {
     m.flatMap(f).flatMap(g) == m.flatMap(x => f(x).flatMap(g))
   }
 
+  def runNamedTest(name: String, test: => Unit): Unit = {
+    logit("running test = " + name)
+    test
+  }
+
   "Monad[Option[Int]]" should "satisfy left identity 2" in {
     import cats.instances.option._
 
-    val f1: Int => Option[String] = i => Some((i * 2).toString + " yeah")
-    val f2: Int => Option[String] = _ => None
+    case class MyException(val message: String) extends Exception {
+      override def equals(that: Any): Boolean = {
+        this.getClass == that.getClass &&
+        this.message == that.asInstanceOf[MyException].message
+      }
+    }
+
+    val f0: Int => Option[String] = i => Some((i * 2).toString + " yeah")
+    val f1: Int => Option[String] = _ => None
+    val f2: Int => Option[Int] = i => Some(i*i)
+
+    /**
+     * The Java default Exception's equals method returns true,
+     * only when they are exactly the same instance (memory reference)
+     *
+     * So, using my own Exception type which only checks the equality of the error message
+     *  => test passes
+     */
+    val f3: Int => Option[Throwable] = i => Some(new MyException(s"Exception: $i"))
+    val f4: Int => Option[MyException] = i => Some(new MyException(s"Exception: $i"))
+
+    val f5: Int => Option[Either[Throwable, String]] = i =>
+      if(i % 2 == 0)
+        Some(Right(s"even number ${i} allowed"))
+      else
+        Some(Left(new MyException(s"odd number ${i} is not allowed ")))
+    val f6: Int => Option[List[Int]] = i => Some((0 to i).toList)
+    val f7: Int => Option[String] =
+      i =>
+        Map(
+          0 -> "here",
+          2 -> "here",
+          4 -> "here",
+          5 -> "here",
+          6 -> "here",
+          11 -> "here",
+          13 -> "here",
+          -12 -> "here",
+          10 -> "here"
+        ).get(i)
 
     forAll { (a: Int) => {
-      verifyLeftIdentityLaw(a)(f1)
-      verifyLeftIdentityLaw(a)(f2)
+      runNamedTest("test0", verifyLeftIdentityLaw(a)(f0))
+      runNamedTest("test1", verifyLeftIdentityLaw(a)(f1))
+      runNamedTest("test2", verifyLeftIdentityLaw(a)(f2))
+      runNamedTest("test3", verifyLeftIdentityLaw(a)(f3))
+      runNamedTest("test4", verifyLeftIdentityLaw(a)(f4))
+      runNamedTest("test5", verifyLeftIdentityLaw(a)(f5))
+      runNamedTest("test6", verifyLeftIdentityLaw(a)(f6))
+      runNamedTest("test7", verifyLeftIdentityLaw(a)(f7))
     }}
   }
 }
