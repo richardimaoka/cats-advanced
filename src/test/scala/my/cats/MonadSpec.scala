@@ -1,5 +1,6 @@
 package my.cats
 
+import cats.Applicative
 import org.scalatest._
 import org.scalatest.prop.PropertyChecks
 
@@ -52,25 +53,26 @@ class MonadSpec extends FlatSpec with Matchers with PropertyChecks {
   }
 
 
-  def checkLeftIdentity[A, B, M[A]](f: A => M[A]): Unit = forAll {
-    import cats.instances.option._
-    import cats.syntax.applicative._
-
-    a.pure[M].flatMap(f) should be(f(a))
-  }
+//  def checkLeftIdentity[A, B, M[_]: Monad[M]](f: A => M[A]): Unit = forAll {
+//    import cats.instances.option._
+//    import cats.syntax.applicative._
+//
+//    val aMonad = a.pure[M[A]]
+//      aMonad..flatMap(f) should be(f(a))
+//  }
 
   /***********************************
    * Using Generator for Option
    ***********************************/
 
   "Monad[Option[Int]]" should "satisfy left identity" in {
+    import cats.instances.option._
+    import cats.syntax.applicative._
+
+    val f: Int => Option[String] = i => Some((i * 2).toString + " yeah")
+
     forAll { (a: Int) =>
-      import cats.instances.option._
-      import cats.syntax.applicative._
-
       //logit(s"testing for $i")
-      val f: Int => Option[String] = i => Some((i * 2).toString + " yeah")
-
       a.pure[Option].flatMap(f) should be(f(a))
     }
   }
@@ -80,17 +82,35 @@ class MonadSpec extends FlatSpec with Matchers with PropertyChecks {
    ***********************************/
 
   "Monad[List[Int]]" should "satisfy left identity" in {
+    import cats.instances.list._
+    import cats.syntax.applicative._
+
+    val f: Int => List[String] = i => List((i * 2).toString + " yeah")
+
     forAll { (a: Int) =>
-      import cats.instances.list._
-      import cats.syntax.applicative._
-
-      //logit(s"testing for $i")
-      val f: Int => List[String] = i => List((i * 2).toString + " yeah")
-
-      logit(f(a))
-      logit(a.pure[List].flatMap(f))
-
+      //logit(s"${f(a)} should be ${a.pure[List].flatMap(f)}")
       a.pure[List].flatMap(f) should be(f(a))
+    }
+  }
+
+  /***********************************
+   * Using function and generator
+   ***********************************/
+
+  "Monad[Option[Int]]" should "satisfy left identity 2" in {
+    import cats.instances.option._
+    import cats.syntax.applicative._
+
+    val f: Int => Option[String] = i => Some((i * 2).toString + " yeah")
+
+    def verify[A, B](a: A)(f: A => Option[B]): Unit = {
+      logit(s"testing for $a")
+      logit(s"${f(a)} should be ${a.pure[Option].flatMap(f)}")
+      a.pure[Option].flatMap(f) should be(f(a))
+    }
+
+    forAll { (a: Int) =>
+      verify(a)(f)
     }
   }
 }
