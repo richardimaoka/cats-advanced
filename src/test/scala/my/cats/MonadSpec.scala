@@ -95,22 +95,48 @@ class MonadSpec extends FlatSpec with Matchers with PropertyChecks {
   /***********************************
    * Using function and generator
    ***********************************/
+  import cats.Monad
+
+  def verifyLeftIdentityLaw[A, B, F[_]](a: A, log: Boolean = false)(f: A => F[B])(implicit applicative: Monad[F]): Unit = {
+    import cats.syntax.applicative._
+    import cats.syntax.flatMap._
+
+    if(log) {
+      logit(s"testing for $a")
+      logit(s"f(a) = ${f(a)} should be a.pure[F].flatMap(f) = ${a.pure[F].flatMap(f)}")
+    }
+    a.pure[F].flatMap(f) should be(f(a))
+  }
+
+  def verifyRightIdentityLaw[A, F[_]](m: F[A], log: Boolean = false)(implicit applicative: Monad[F]): Unit = {
+    import cats.syntax.applicative._
+    import cats.syntax.flatMap._
+
+    if(log) {
+      logit(s"m.flatMap(_.pure) = ${m.flatMap(_.pure)} should be m = ${m}")
+    }
+    m.flatMap(_.pure) should be(m)
+  }
+
+  def verifyAssociativityLaw[A, B, C, F[_]](m: F[A], log: Boolean = false)(f: A => F[B], g: B => F[C])(implicit applicative: Monad[F]): Unit = {
+    import cats.syntax.flatMap._
+
+    if(log) {
+      logit(s"testing for $m")
+      logit(s"m.flatMap(f).flatMap(g)) = ${m.flatMap(f).flatMap(g)} should be m.flatMap(x => f(x).flatMap(g)) = ${m.flatMap(x => f(x).flatMap(g))}")
+    }
+    m.flatMap(f).flatMap(g) == m.flatMap(x => f(x).flatMap(g))
+  }
 
   "Monad[Option[Int]]" should "satisfy left identity 2" in {
-    import cats.Monad
-    import cats.instances.all._
-    import cats.syntax.all._
+    import cats.instances.option._
 
-    val f: Int => Option[String] = i => Some((i * 2).toString + " yeah")
+    val f1: Int => Option[String] = i => Some((i * 2).toString + " yeah")
+    val f2: Int => Option[String] = _ => None
 
-    def verify[A, B, F[_]](a: A)(f: A => F[B])(implicit applicative: Monad[F]): Unit = {
-      //logit(s"testing for $a")
-      //logit(s"${f(a)} should be ${a.pure[Option].flatMap(f)}")
-      a.pure[F].flatMap(f) should be(f(a))
-    }
-
-    forAll { (a: Int) =>
-      verify(a)(f)
-    }
+    forAll { (a: Int) => {
+      verifyLeftIdentityLaw(a)(f1)
+      verifyLeftIdentityLaw(a)(f2)
+    }}
   }
 }
