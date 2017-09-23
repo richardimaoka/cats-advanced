@@ -1,6 +1,5 @@
 package my.cats
 
-import cats.Applicative
 import org.scalatest._
 import org.scalatest.prop.PropertyChecks
 
@@ -98,15 +97,16 @@ class MonadSpec extends FlatSpec with Matchers with PropertyChecks {
    ***********************************/
 
   "Monad[Option[Int]]" should "satisfy left identity 2" in {
-    import cats.instances.option._
-    import cats.syntax.applicative._
+    import cats.Monad
+    import cats.instances.all._
+    import cats.syntax.all._
 
     val f: Int => Option[String] = i => Some((i * 2).toString + " yeah")
 
-    def verify[A, B](a: A)(f: A => Option[B]): Unit = {
-      logit(s"testing for $a")
-      logit(s"${f(a)} should be ${a.pure[Option].flatMap(f)}")
-      a.pure[Option].flatMap(f) should be(f(a))
+    def verify[A, B, F[_]](a: A)(f: A => F[B])(implicit applicative: Monad[F]): Unit = {
+      //logit(s"testing for $a")
+      //logit(s"${f(a)} should be ${a.pure[Option].flatMap(f)}")
+      a.pure[F].flatMap(f) should be(f(a))
     }
 
     forAll { (a: Int) =>
